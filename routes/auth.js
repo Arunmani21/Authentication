@@ -20,14 +20,6 @@ const init = async () =>{
     };
  init();
 
- function mnemonicToKeyPair(mnemonic, derivationPath, password) {
-    const seed = bip39.mnemonicToSeedSync(mnemonic,derivationPath, password);
-    const { privateKey, publicKey } = hdkey
-      .fromMasterSeed(seed)
-      .derive(derivationPath);
-    return { privateKey, publicKey };
-  }
-  
 router.post('/register', (req, res) => {
      let isUserexists = users.findOne({username: req.body.username});
     if (isUserexists) {
@@ -49,41 +41,6 @@ router.post('/register', (req, res) => {
         });
     }
 });
-
-router.get('/private', (req, res) => {
-    let userexists = users.find((user) => user.mnemonic === req.body.mnemonic);
-    if(userexists){
-        let pair =  mnemonicToKeyPair( userexists.mnemonic,"m/44'/60'/0'/0",
-    "1234");
-    console.log(pair.privateKey);
-    res.send({
-        privateKey: pair.privateKey.toString('hex'),
-        user: userexists
-    });    
-    } else{
-        res.send({
-            message: "mnemonic Key is not valid",
-            users
-        });
-    } 
-});
-router.post('/public', (req, res) => {
-    console.log(req.body.privateKey, req.body.username);
-    let provider = new HDWalletProvider(
-   req.body.privateKey,"http://localhost:7545");
-    console.log(provider.getAddress());
- let currentUser = users.find( s =>{
-        return s.username == req.body.username;
-    });
-    currentUser.address = provider.getAddress();
-    console.log(users);
-    res.send({
-    address:provider.getAddress(),
-    user: currentUser
-    
-    });
-
-// });
 
 router.post("/login", (req, res) => {
     console.log(users);
@@ -123,25 +80,9 @@ const authenticateJWT = (req, res, next) => {
         res.sendStatus(401);
     }
 };
-router.post('/mint',authenticateJWT,  async (req, res) =>{
-    let key = await init();
-     console.log( 'data', req.user);
-    await key.contract.methods.mint(req.user.address,50).send({
-        from :key.addresses[0],  
-   }); 
-   res.send({
-    message : "minted"
-});
-}); 
 
-router.get('/balance/:address', async (req, res) => {
-    let key = await init();
-    const result = await key.contract.methods.balanceOf(req.params.address).call();
-    console.log(req.params.address,result);
-    res.send({
-        value : result
-    }); 
-});
+
+
 
 
  module.exports = router;
